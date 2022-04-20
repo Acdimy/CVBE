@@ -1,0 +1,5 @@
+And(Not(And(Not(1), Not(0), Or(Not(0), Not(1)))),
+    And(1,
+        Not(And(Not(0), Not(1))),
+        Not(Or(Not(0), Not(1))),
+        0))
