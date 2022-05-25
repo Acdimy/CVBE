@@ -1,0 +1,105 @@
+0 layer
+2
+1 layer
+8
+2 layer
+16
+3 layer
+16
+4 layer
+56
+5 layer
+224
+6 layer
+8
+7 layer
+16
+8 layer
+4
+9 layer
+4
+10 layer
+24
+11 layer
+32
+12 layer
+8
+13 layer
+8
+14 layer
+4
+15 layer
+8
+16 layer
+4
+17 layer
+4
+18 layer
+8
+19 layer
+8
+20 layer
+4
+21 layer
+8
+22 layer
+4
+23 layer
+4
+end cvbe0
+
+0 layer
+2
+1 layer
+8
+2 layer
+16
+3 layer
+32
+4 layer
+12
+5 layer
+12
+6 layer
+4
+7 layer
+8
+8 layer
+4
+9 layer
+4
+10 layer
+24
+11 layer
+32
+12 layer
+8
+13 layer
+8
+14 layer
+4
+15 layer
+8
+16 layer
+4
+17 layer
+4
+18 layer
+8
+19 layer
+8
+20 layer
+4
+21 layer
+8
+22 layer
+4
+23 layer
+4
+end cvbe1
+
+
+
+test_multi
+test_simple
+test_x2
