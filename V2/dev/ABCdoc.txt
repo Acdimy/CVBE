@@ -1,0 +1,914 @@
+ABC: A System for Sequential Synthesis and Verification
+ 
+
+Berkeley Verification and Synthesis Research Center
+
+ 
+
+ 
+
+ABC is a growing software system for synthesis and verification of binary sequential logic circuits appearing in synchronous hardware designs. ABC combines scalable logic optimization based on And-Inverter Graphs (AIGs), optimal-delay DAG-based technology mapping for look-up tables and standard cells, and innovative algorithms for sequential synthesis and verification.
+
+ 
+
+ABC provides an experimental implementation of these algorithms and a programming environment for building similar applications. Future development will focus on improving the algorithms and making most of the packages stand-alone. This will allow the user to customize ABC for their needs as if it were a tool-box rather than a complete tool.
+
+ 
+
+Introduction
+ 
+
+Data structures and algorithms at the heart of a software system determine its capabilities in processing data and its efficiency as a programming environment for building new applications. Extensive experience of developing and using SIS, VIS, and MVSIS, makes it clear that these systems do not provide a flexible programming environment to implement recent innovations, such as integration of technology mapping and retiming. Specifically, the SIS environment is outdated and rather inefficient when handling large circuits. VIS, designed as a formal verification tool for multi-valued specifications, does not provide enough flexibility for binary synthesis. MVSIS was developed and extensively used by us in the recent years for implementing new synthesis algorithms for both multi-valued and binary networks. Finally, we became convinced that (a) the basic data structures and algorithms of MVSIS can be made considerably simpler and easier to use by assuming binary networks, and (b) a central place in the new system should be given to a new data structure, AIGs (multi-level logic networks composed of two-input ANDs and inverters), which promises improvements in quality and runtime of synthesis and verification.
+
+ 
+
+This understanding motivates us to redevelop the core packages of MVSIS resulting in a new programming environment named ABC. As the name suggests, the primary goal is to keep data structures simple and flexible for a wide range of applications. The “philosophy of ABC” has several basic premises. One of them is allowing for a variety of functional representations, such as BDDs and SOPs, to solve specialized tasks, while defaulting to AIGs for the mainstream network manipulation. Representing logic using AIGs leads to a remarkable uniformity in computation and efficient interfacing with CNF-based SAT solvers for handing Boolean reasoning problems. Another fundamental premise of ABC is the synergy between synthesis and verification using efficient SAT-based Boolean reasoning on the AIG for combinational and sequential equivalence checking.
+
+ 
+
+The goal of the ABC project is to provide a public-domain implementation of the state-of-the-art combinational and sequential synthesis algorithms and, at the same time, create an open-source environment, in which such applications can be developed and compared. The current version of ABC can optimize/map/retime industrial gate-level designs with 100K gates and 10K sequential elements for optimal delay and heuristically minimized area in about one minute of CPU time on a modern computer. The runtime of the combinational synthesis, mapping, and verification is typically faster.
+
+ 
+
+Highlights
+ 
+
+·    Basic data structures to represent and manipulate combinational and sequential technology-independent networks in a variety of ways: as a netlist, as a logic network with nodes represented by SOPs (a SIS-style network) or by BDDs (a BDS-style network), as a technology-mapped network, as an AIG, as a sequential AIG, etc.
+
+ 
+
+·    Input file parsers for binary BLIF, binary PLA, BENCH format, a subset of EDIF (for reading ISCAS benchmarks), a subset of Synopsys equation format, and a subset of structural Verilog (for reading IWLS 2005 benchmarks).
+
+ 
+
+·    Output file writers for binary BLIF (both technology-independent and mapped), binary PLA (collapsed networks only), BENCH format, Synopsys equation format, CNF (combinational miters only), and two representations for circuit graphs: DOT format (used in the graph visualization package GraphViz) and GML format (used by some graph editors, such as yEd, a free product of yWorks).
+
+ 
+
+·    A specialized format BAF (Binary Aig Format) for reading/writing large AIGs into binary files. With BAF, reading and writing of AIGs with millions of AND-nodes can be done in a few seconds. The memory requirements are also reduced by almost an order of magnitude, compared to BLIF and Verilog.
+
+ 
+
+·    The data structures to represent logic networks that are conceptually similar to those used in SIS and procedures to perform multi-purpose operations on logic networks, such as technology-independent sweeping, logic sharing, disjoint-support decomposition, structural hashing and balancing of AIGs, creating combinational and sequential miters (product machines), unrolling sequential circuits for a number of timeframes, etc.
+
+ 
+
+·    Efficient combinational synthesis flow based on AIG balancing, rewriting, and refactoring using DAG-aware transformations inspired by Per Bjesse and Arne Boralv, "DAG-aware circuit compression for formal verification", (ICCAD 2004, pp. 42-49). These commands work on combinational networks only. They can be used to accumulate structural choices that lead to additional freedom in technology mapping and sequential synthesis.
+
+ 
+
+·    Procedures to detect and accumulate structurally different representations of Boolean functions (FRAIG package).
+
+ 
+
+·    Procedures working with several snapshots of the same network. These procedures implement the idea of lossless synthesis, which consists in accumulating all or some of the functionally-equivalent structurally-different representation of logic functions that appear in the course of logic transformations. Mapping over the multiple structures helps overcome structural bias and tends to improve delay and area.
+
+ 
+
+·    Technology mappers for variable-LUT-size FPGAs and standard cells, applicable to traditional logic networks and logic network with structural choices. Recently added priority-cut-based mapper has improved memory and runtime.
+
+ 
+
+·    Several area-oriented resynthesis commands for LUT mapping, such as imfs and lutpack.
+
+ 
+
+·    Combinational equivalence checking based on SAT sweeping, a resource-aware combination of simulation and SAT. The important previous work includes
+
+o       A. Kuehlmann et al, “Circuit-based Boolean Reasoning”, DAC 2001.
+
+o       F. Lu et al, “A Signal Correlation Guided ATPG Solver And Its Applications For Solving Difficult Industrial Cases”, DAC 2003).
+
+o       A. Mishchenko, S. Chatterjee, R. Jiang, and R. K. Brayton, "FRAIGs: A unifying representation for logic synthesis and verification". ERL Technical Report, EECS Dept., UC Berkeley, March 2005.
+
+ 
+
+·    Basic data structures for sequential synthesis (sequential AIG) and an experimental implementation of integrated sequential optimization, which combines logic synthesis, technology mapping, and retiming for standard cells and FPGAs. This work is inspired by the papers: P. Pan, “Continuous retiming: algorithms and applications”, ICCD 1997. P. Pan and C.-C. Lin “A new retiming-based technology mapping algorithm for LUT-based FPGAs”, FPGA 1998. Initial state of circuits after retiming is computed by formulating and solving a SAT problem.
+
+ 
+
+·    Programmable interface to MiniSat, an extensible SAT solver by Niklas Eén and Niklas Sörensson. The C version of the solver is included in the current release of ABC.
+
+ 
+
+·    Procedures to construct the global BDDs of the primary output functions of the network using CUDD package by Fabio Somenzi. The code of CUDD Version 2.3.1 is included in the current release of ABC.
+
+ 
+
+·    Simple bounded sequential equivalence checking, which unrolls sequential circuits for a given number of timeframes and performs combinational equivalence of the resulting combinational circuits.
+
+ 
+
+·    Sequential synthesis commands lcorr and ssw for detecting and merging sequentially-equivalent registers and internal nodes. These command can be seen as extension into the sequential domain of the notion of SAT sweeping (command fraig).
+
+ 
+
+·    Unbounded sequential equivalence checking command dsec applicable to two networks to be verified for equivalence (and its counterpart, command dprove that works on a sequential miter).
+
+ 
+
+Next steps
+ 
+
+·    Logic restructuring with external don’t-cares (in sequential circuits, subsets of unreachable states can be efficiently computed and used as external don’t-cares).
+
+ 
+
+·    Support of AIG minimization and technology mapping with “white boxes”. These are multi-input multi-output nodes in the design hierarchy whose delay parameters as well as logic functions are known (and therefore can be used for delay-tracing, simulation, don’t-care computation, etc). The “white boxes” should not be flattened, optimized, and mapped, as the rest of the logic surrounding them because the user may prefer to realize them using a predefined implementation. For example, large adders should not be mapped because they can be implemented using specialized hardware available in the FGPA architectures.
+
+ 
+
+·    Another innovative feature that is currently being developed in ABC is recording of a synthesis history and exploiting it as a set of hints to speed up sequential verification for large designs.
+
+ 
+
+Getting ABC
+ 
+
+The latest version of ABC can be downloaded from https://bitbucket.org/alanmi/abc
+
+ 
+
+Several earlier versions are also available: abc51205, abc61225, abc70930. Here is abc70930 that works on Mac OS with Xcode (kindly provided by S. M. Raiyan Kabir).
+
+ 
+
+A recent Windows binary and resource file are also available.  To run the binary, place the resource file in the same directory.
+
+ 
+
+In papers and reports, please refer to ABC as follows: Berkeley Logic Synthesis and Verification Group, ABC: A System for Sequential Synthesis and Verification, Release YMMDD. http://www.eecs.berkeley.edu/~alanmi/abc/
+
+ 
+
+In the above reference, instead of YMMDD, substitute the number of the release version used, abbreviated as follows: Y[year]MM[month]DD[day].
+
+ 
+
+Known bugs
+ 
+
+Since ABC has substantially grown since its first release, bugs and unexpected “features” are likely to appear. It is recommended that verification commands are used during synthesis. Thus, commands cec (combinational verification), sec and dsec (sequential verification) can be run between individual synthesis transformations. These commands compare the current network against its specification derived from the initial file. The result is reported to the user.
+
+ 
+
+Command summary
+ 
+
+This section provided a short description of commands implemented in the current release.
+
+ 
+
+Basic
+ 
+
+Basic commands are similar to those implemented in SIS, VIS, and MVSIS.
+
+ 
+
+alias – Creates association of a character or a short word with an available command. For example, once alias ps print_stats is entered on the command line, typing ps at the prompt invokes print_stats. A list of standard aliases is given in file abc.rc, which is included in the distribution. When the file is in the current direction when ABC runs, it is loaded automatically. Alternatively, it can be loaded by running command source <path_to_the_resource_file>/abc.rc. This file is automatically loaded when the program starts.
+
+ 
+
+echo – Prints a message to the standard output. Is used to add human-readable comments to the print-outs produced by script files. The message should be in quotes. For example, line echo “Synthesis” included in the script results in word Synthesis printed on the screen.
+
+ 
+
+empty – Frees all networks currently stored in memory.
+
+ 
+
+help – Prints the list of all currently implemented commands.
+
+ 
+
+history – Prints the given number of recent command lines entered by the user.
+
+ 
+
+ls – (Windows only.) Prints the list of files present in the current directory.
+
+ 
+
+recall – Returns to the network at one of the recent optimization steps. The number of recent networks stored is controlled by the parameter savesteps. To change this parameter, run set savesteps n, where n is the desired number of recent networks to store. The default value is 1 (only one previous network is stored). To speed-up processing and to reduce memory consumption when working with large networks, it may be convenient to disable storing recent networks. This can be achieved by running unset backup on the command line. To enable backup again, type set backup.
+
+ 
+
+quit – Exits the program.
+
+ 
+
+set – Sets a parameter on the command line.
+
+ 
+
+source – Executes a script. For example, given a script file optimize.scr, the line source optimize.scr will execute the script. The line source –x optimize.scr will execute the script and echo command to the screen.
+
+ 
+
+time – Prints two time measurements: (a) the time the program spent computing since the last invocation of command time and (b) the time the program spent computing since it was started.
+
+ 
+
+unalias – Removes an alias previously set by command alias.
+
+ 
+
+undo – Sets the current network to be the network saved before executing the last synthesis command, which has changed the current network. For example, command print_stats does not change the network. So running undo after print_stats will set the current network to be the one before the last command that has changed it. If, for example, the last command before print­­­_stats was map, the current network after undo will be as it was before mapping.
+
+ 
+
+unset – Removes a parameter previous set using command set.
+
+ 
+
+Input
+ 
+
+read – Parses an input file using one of the available file readers. The file extension is used to determine what file parser to invoke. The recognized file extensions are: aig, baf, bench, blif, eqn, pla, verilog.
+
+ 
+
+read_aiger – Reads the combinational AIG in binary AIGER format developed by Armin Biere. This format is very compact and leads to a substantial reduction in the reading/writing times.
+
+ 
+
+read_baf – Reads the combinational AIG in Binary Aig Format (BAF). For a description of BAF, refer to the source code file src/base/io/ioWriteBaf.c. This format is superseded by the AIGER format and kept for backward compatibility with earlier versions of ABC.
+
+ 
+
+read_bench – Parses the input file in BENCH (ISCAS) format.
+
+ 
+
+read_blif – Parses the input file in BLIF. This command can also read hierarchical BLIF with black boxes as described in the paper.
+
+ 
+
+read_blif_mv – Parses the input file in BLIF-MV. The hierarchy is flattened while reading. The MV variables are encoded using logarithmic encoding. The resulting network is a structurally hashed AIG. To write a matching BLIF-MV output, use command write_hie.
+
+ 
+
+read_dsd – Reads single-output Boolean function using a formula representing its disjoint-support decomposition. This command is useful to quickly read function by typing their formulas on the command line. Try, for example, read_dsd (a*b)+(c*d); clp -r; pk.
+
+ 
+
+read_eqn – Parses the input file in the Synopsys equation format, which can also be produced by SIS (command write_eqn). A subset of equation format is supported, which uses Boolean AND (*), OR (+), and complement (!). Nested parentheses are allowed by the current version of the parser.
+
+ 
+
+read_pla – Parses the input file in PLA assuming the most often used “fd” type of PLA (in the output part, “1” means the cube belongs to the on-set, “-“ means the cube belongs to the don’t-care set, and “0” means the cube has no meaning for the given output). In the resulting network each output is represented by one logic node. Only binary PLAs are currently supported; the don’t-care cubes are currently ignored.
+
+ 
+
+read_truth – Read one Boolean function represented as a truth table, composed of 0s and 1s. This command is useful to quickly input and visualize small functions. For example, read_truth 10000000; bdd; print_kmap prints the Karnaugh map of three input AND-gate.
+
+ 
+
+read_verilog – Parses the input file in a very limited subset of structural Verilog, which includes all the keywords and directives needed for reading IWLS 2002 Benchmarks and  IWLS 2005 Benchmarks. Before reading the latter, make sure the Cadence library is loaded into ABC using command read_library cadence.genlib. When the library is loaded, use command r –m <file.v>
+
+ 
+
+Output
+ 
+
+write – Writes the output file using one of the available file writers. The file extension is used to determine what file writer to invoke. The recognized file extensions are: aig, baf, bench, blif, cnf, dot, eqn, gml, pla, verilog.
+
+ 
+
+write_aiger – Writes the combinational AIG in binary AIGER format developed by Armin Biere. This format is very compact and leads to a substantial reduction in the reading/writing times. (When writing AIGER for sequential circuits with non-0 initial states, use command zero to normalize the registers initial states.)
+
+ 
+
+write_baf – Writes the combinational AIG in Binary Aig Format (BAF). For a description of BAF, refer to the source code file src/base/io/ioWriteBaf.c. This format is superseded by the AIGER format and kept for backward compatibility with earlier versions of ABC.
+
+ 
+
+write_bench – Outputs the current network into a BENCH file.
+
+ 
+
+write_blif – Outputs the current network into a BLIF file. If the current network is mapped using a standard cell library, outputs the current network into a BLIF file, compatible with SIS and other tools. (The same genlib library has to be selected in SIS before reading the generated file.) The current mapper does not map the registers. As a result, the mapped BLIF files generated for sequential circuits contain unmapped latches. Additionally, command write_blif with command-line switch –l writes out a part of the current network containing a combinational logic without latches.
+
+ 
+
+write_blif_mv – Outputs the current network into a BLIF-MV file. Two write a hierarchical BLIF-MV output, use command write_hie.
+
+ 
+
+write_cnf – Outputs the current network into a CNF file, which can be used with a variety of SAT solvers. This command is only applicable to combinational miter circuits (the miter circuit has only one output, which is expected to be zero under all input combinations).
+
+ 
+
+write_counter – Outputs the counter-example after solving a satisfiable miter using commands sat, prove or iprove .
+
+ 
+
+write_dot – Outputs the structure of the current network into a DOT file that can be processed by graph visualization package GraphViz. Currently work only if the current network is an AIG.
+
+ 
+
+write_eqn – Outputs the combinational part of the current network in the Synopsys equation format.
+
+ 
+
+write_hie – Outputs the hierarchy containing black boxes into a file if the original design contained black boxes. The original file should be given as one of the arguments in this command.
+
+ 
+
+write_gml – Outputs the structure of the current network into a GML file used by some graph editors, such as yEd, a free product of yWorks.
+
+ 
+
+write_pla – Outputs the current network into a PLA file. The current network should be collapsed (each PO is represented by a node whose fanins are PIs). Works only for combinational networks.
+
+ 
+
+write_verilog – Outputs the network using technology-independent Verilog.
+
+ 
+
+Printing
+ 
+
+print_auto – Prints information about auto-symmetries of the function.
+
+ 
+
+print_exdc – Prints statistics of the EXDC network (external don’t-care network).
+
+ 
+
+print_factor – Prints the factored forms of the nodes in the current network.
+
+ 
+
+print_fanio – Prints the distribution of nodes by the number of fanins and fanouts.
+
+ 
+
+print_gates – Prints statistics about the gates used after technology mapping. For a technology-independent networks, prints how many nodes have a given type of logic function.
+
+ 
+
+print_io – Prints the lists of primary inputs (PI), primary outputs (POs), and latches of the network. When called for a node (given by a name on the command line), prints its fanouts and fanouts.
+
+ 
+
+print_kmap – Prints Karnaugh map of the logic function of a node.
+
+ 
+
+print_latch – Prints the information about latches of the current networks.
+
+ 
+
+print_level – Prints the distribution of the COs by the number of levels in their logic cones. If the network is mapped, prints a delay profile of the COs.
+
+ 
+
+print_mffc – Prints the maximum-fanout free cones (MFFCs) of each node in the network.
+
+ 
+
+print_sharing – Prints the number of nodes shared by each pair of the COs in the current network.
+
+ 
+
+print_stats – Prints the vital stats of the current networks. The statistics printed depend on the current network representation.
+
+ 
+
+print_supp – Prints information about the supports of the PO functions in terms of the PI variables.
+
+ 
+
+print_symm – Prints information about the classical two-variable symmetries of the PO functions in terms of the PI variables.
+
+ 
+
+print_unate – Prints information about the unateness of the PO functions in terms of the PI variables.
+
+ 
+
+show – Visualizes the structure of the current network.
+
+ 
+
+show_cut – Visualizes a subset of nodes in the AIG.
+
+ 
+
+show_bdd – Visualizes the structure of the BDD of one node.
+
+ 
+
+Synthesis
+ 
+
+Combinational synthesis
+ 
+
+This section lists combinational synthesis commands implemented in the current release. Fast and efficient synthesis is achieved by DAG-aware rewriting of the AIG. Rewriting is performed using a library of pre-computed four-input AIGs (command rewrite; standard alias rw), or collapsing and refactoring of logic cones with 10-20 inputs (command refactor; standard alias rf). It can be experimentally shown that iterating these two transformations and interleaving them with AIG balancing (command balance; standard alias b) substantially reduces the AIG size and tends to reduce the number of AIG levels.
+
+ 
+
+The logic synthesis scripts currently offered are resyn, resyn2, and resyn2rs. They are defined as aliases in the resource file abc.rc. Although these scripts do not include a dedicated command to extract common logic, the logic is being shared due to the DAG-aware nature of rewriting. It accepts changes only if the number of the AIG nodes is reduced, which is achieved by restructuring the current AIG and maximally sharing the other nodes available in the current network. This is especially true if rewrite and refactor are used with a switch enabling zero-cost replacements, as in the above scripts (commands rewrite –z and refactor –z; standard aliases rwz and rfz, respectively). In this case, even if rewriting does not immediately reduce the AIG size, the structure is reshaped and new opportunities for logic sharing are created for the future rewriting iterations.
+
+ 
+
+Other synthesis commands can be used to convert initial SOP logic network into an AIG using structural hashing (command strash; standard alias st) and recreating SOP logic network from the AIG (command renode; standard alias ren). The traditional fast extract (command fx) can be applied to the SOP logic network, as well as DSD-based sharing extraction (scripts share and sharedsd, respectively). In our experience, these commands do not perform as well as AIG rewriting when it comes to reducing both the number of nodes (area) and the number of logic levels (delay).
+
+ 
+
+Combinational logic synthesis in ABC using resyn and resyn2 is typically 10-100x faster compared to script.rugged or script.algebraic in SIS and mvsis.rugged in MVSIS, yet gives a comparable quality measured in terms of the number of AIG nodes and levels in the resulting network. Although the resulting number of factored-form literals is typically larger compared to SIS/MVSIS, the resulting AIG networks are better tuned for mapping, which results in better delay and area compared to these tools.
+
+ 
+
+It can be noted that the proposed combinational logic synthesis differs from the classical approach implemented in SIS and MVSIS. In these systems, the node boundaries are always kept while optimization works on individual nodes (SIS commands simplify and full_simplify), or the node boundaries are incrementally changed (SIS commands eliminate and resub). In ABC, the node boundaries are initially destroyed by structural hashing (command strash), which transforms a logic network into an AIG. The boundries can be recreated on demand using command renode, which can be seen as a reverse of the SIS command eliminate. In the synthesis flow presented above (scripts resyn and resyn2) logic is transformed on the AIG level without creating nodes. In a sense, ABC works on a completely eliminated network, in which node boundaries do not exist whereas other tools preserve the node boundaries.
+
+ 
+
+ 
+
+balance – Assumes that the input is an AIG and creates an equivalent AIG having the minimum delay, measured using logic levels of two-input AND-gates. The inverters do not count towards the number of logic levels. The resulting AIG is derived by algebraic balancing of the multi-input AND-gates contained in the original AIG. The balancing is applied in the topological order and selects the minimum delay tree-decomposition of each multi-input AND-gate. Balancing takes into account the arrival times of primary inputs, which can be represented in BLIF.
+
+ 
+
+cleanup – Removes the dangling nodes in the current logic network, that is, the logic nodes that do not fanout into POs and latches.
+
+ 
+
+collapse – Recursively composes the fanin nodes into the fanout nodes resulting in a network, in which each CO is produced by a node, whose fanins are CIs. Collapsing is performed by building global functions using BDDs and is, therefore, limited to relatively small circuits. After collapsing, the node functions are represented using BDDs.
+
+ 
+
+dsd – Applies disjoint-support decomposition using the algorithm by Bertacco/Damiani (ICCAD’97).
+
+ 
+
+fx – Detects logic sharing by extracting two-cube divisors and two-literal single-cube divisors using the algorithm by Rajski/Vasudevamurthi (TCAD’92).
+
+ 
+
+multi – Expands the two-input-gate AIG into a network of multi-input AND-gates.
+
+ 
+
+refactor – Performs iterative collapsing and refactoring of logic cones in the AIG, which attempts to reduce the number of AIG nodes and the number of logic levels.
+
+ 
+
+renode – Assumes that the input is an AIG. Creates node boundaries in this AIG and collapses the intermediate logic to form larger nodes.
+
+ 
+
+rewrite – Performs DAG-aware rewriting of the AIG, which attempts to reduce the number of AIG nodes and the number of logic levels.
+
+ 
+
+rr – Performs redundancy removal for AIGs.
+
+ 
+
+strash – Transforms the current network into an AIG by one-level structural hashing. The resulting AIG is a logic network composed of two-input AND gates and inverters represented as complemented attributes on the edges. Structural hashing is a purely combinational transformation, which does not modify the number and positions of latches.
+
+ 
+
+sweep – Classical sweep applicable to the current logic network resulting in a logic network. Sweep performs the following tasks: removes dangling nodes (nodes without fanouts), collapses buffers and inverters into their fanouts, propagates constants, and removes duplicated fanins. Sweep cannot be applied to an AIG because an AIG is structurally hashed and therefore does not have buffers, inverters, and unpropagated constant nodes. To remove dandling nodes in the logic network, use cleanup.
+
+ 
+
+Sequential synthesis
+ 
+
+Sequential synthesis transforms the current network by modifying its logic together with the memory elements (latches or flip-flops) if they are present. The resulting network may have a different state encoding and reachable state space, compared to the original network, but the two networks are sequentially equivalent (that is, starting from the initial states, for the same sequences of input vectors, they produce identical sequences of the output vectors).
+
+ 
+
+The simplest sequential transformation is retiming. Retiming leaves the network structure unchanged but moves latches around in such a way that the number of latches of each PI/PO path and on each loop does not change. More complex sequential transformations modify both the logic structure and the positions of the latches. A special place among sequential transformations is given to integrated sequential optimization, which can achieve the globally optimal delay of the circuit by performing a sequence of simple local transformations, such as local restructuring and retiming individual nodes. In ABC integrated sequential optimization is current performed by command if -s. This command finds the minimum delay for the circuit, by exploring the combined space of all logic structures seen during logic synthesis, all possible technology mappings, and all possible retimings.
+
+ 
+
+Currently, only a simple delay-optimal version of sequential integration is implemented in the commands if -s, without much effort to minimize the number of registers and the area of the resulting mapping. The clock period is on average 25% smaller than the clock period computed using combinational mapping only, and 20% smaller than the clock period computed using combinational mapping followed by retiming. However, the resulting area is often larger. This is a known limitation of the current implementation. It will be addressed in the future work by developing efficient latch-minimization and area-recovery techniques based on the notion of sequential slack.
+
+ 
+
+cycle – Simulates the sequential network with random input and updates its current state.
+
+ 
+
+init – Resets the initial states of all latches of the current network. (Note a helpful command print_latch, which can be used to see the initial state of all latches in the current network.)
+
+ 
+
+lcorr – Partitioned implementation of register-correspondence using simple induction. Detects and merges sequentially equivalent registers.
+
+ 
+
+retime – Implements several flavors of retiming: most forward, most backward, a minimum-register, a heuristic minimum-delay, the delay-optimal retiming presented in Peichen Pan, “Continuous retiming: algorithms and applications”, ICCD 1997, pp. 116-121. The latches are optimally shared across the fanout stems when the circuit is transformed from the sequential AIG into a logic network. The computation of initial states after retiming is reduced to a SAT problem, which is solved using MiniSat. The known issues include non-verifies after retiming with latches, which have don’t-care initial states. (For the time being, don’t-care initial states can be replaced by fixed initial states using command init.)
+
+ 
+
+scleanup – Performs sequential cleanup (removes nodes and latches that do not fanout into POs). When used with switch –l (e.g. scl –l), performs “register sweep”, that is, (i) merging registers with identical drivers, and (ii) replacing stuck-at-registers by constants.
+
+ 
+
+ssw – Implements signal-correspondence using K-step induction. Detects and merges sequentially equivalent nodes.
+
+ 
+
+undc – Use this command before running sequential verification, to convert the registers with the don’t-care initial states into registers with a constant-0 initial state by adding new PIs and MUXes controlled by a special register that produces 0 in the first frame and 1 afterwards.
+
+ 
+
+xsim – Performs X-valued simulation of the current sequential network.
+
+ 
+
+zero – Use this command before writing AIGER format (which requires all registers to have the constant-0 initial states) to transform registers with a constant-1 initial state into registers with a constant-0 initial state. The registers are transformed by adding a pair of inverters at the output of the register and retiming the register forward over the first inverter. If a register has a don’t-care initial state, it will be replaced by a constant-0 initial state.
+
+ 
+
+Note that some of these commands are applicable to AIGs and some are applicable to logic networks. To convert between the two, use strash and logic. Printing statistics (print_stats) can be used to see the type of the current network. To see how many registers have init-state equal to 0, 1, and don't-care, use print_latch.
+
+ 
+
+Technology mapping
+ 
+
+LUT-mapping
+ 
+
+The FGPA mapping options are currently limited to variable-LUT-size mapping, in which LUT of each size is characterized by area and delay. The largest allowed size of a LUT is 6 inputs (future versions will allow for 8-input LUTs). The program maps the circuit to achieve optimal delay using classical algorithms for DAG-based technology mapping, followed by a heuristic area recovery. The mapping performed is a generic LUT mapping that does not take into account specific FPGA architecture, which, in addition to programmable LUTs, may contain programmable macrocells composed of gates. The macrocells may contain LUTs mixed with MUXes and other gates. Fine-tuning the mapping process for a specific architecture may significantly improve mapping quality. In the future, an improved version of the FPGA mapper may be developed, which takes into account the specific macrocell architecture.
+
+ 
+
+Sometimes significant area improvements without delay degradation can be achieved by repeatedly running "choice; fpga; ps". Typically it takes more than 10 iterations to converge and the area keeps improving. This is a confirmation of (a) the ability of AIG rewriting to find good circuit structures, (b) the ability of choices to capture structural flexibilities, and (c) the ability of the mapper to do a good area recovery.
+
+ 
+
+if – An all-new integrated FPGA mapper based on the notion of priority cuts. Some of the underlying ideas used in this mapper are described in the recent technical report. The command line switches are similar to those of command fpga.
+
+ 
+
+ffpga – A simple implementation of cutless mapping as introduced in the technical report.
+
+ 
+
+fpga – Performs FPGA mapping using the currently selected LUT library for the current network. If the current network is an AIG or an AIG with choices, it is used for mapping as it is. If the current network is a logic network, before mapping this command performs structural hashing of the factored forms of the nodes (resulting in an AIG) followed by balancing, which algebraically restructures the AIG for optimum delay measured using the number of logic levels of AND gates. Both balancing and mapping take into account the arrival times of the PIs, which can be represented in BLIF. Switch –a disables area recovery and outputs the network as it is after delay optimal mapping.
+
+ 
+
+mfs – An area-oriented resynthesis engine for network mapped into K-LUTs described in the paper.
+
+ 
+
+lutpack – An area-oriented resynthesis engine for network mapped into K-LUTs described in the paper.
+
+ 
+
+print_lut – Prints the currently selected LUT library. Each LUT size is represented by three numbers (the number of inputs, area, and delay). The default LUT library is the library of 5-input LUTs.
+
+ 
+
+read_lut – Reads a LUT library from the file and sets it to be the current LUT library. For a simple example on representing the LUT library, run print­_lut. The printout has the same format as the input file.
+
+ 
+
+Standard cell mapping
+ 
+
+Standard cell mapping implemented in the current release has several distinctive features. It is an optimal-delay DAG mapping based on k-feasible cuts, which is very similar to the classical optimal-delay DAG mapping for LUT-based FPGAs. The mapping algorithms are “gain-based”, that is, they assume load-independent delay model. This assumption is part of the “assume-guarantee” approach: the constant gate delays are assumed by the mapper and guaranteed by the backend synthesis tool, which performs fanout optimization and gate sizing to meet the timing assumptions. The advantage of using the load-independent model is that it leads to fast mapping algorithms, which have the global view of delay and allow for efficient heuristic area recovery. In the future, we plan to implement a load-dependent mapper by post-processing the output of the gain-based mapper.
+
+ 
+
+Sometimes significant area improvements without delay degradation can be achieved by repeatedly running "choice; map; ps". Typically it takes more than 10 iterations to converge and the area keeps improving. This is a confirmation of (a) the ability of AIG rewriting to find good circuit structures, (b) the ability of choices to capture structural flexibilities, and (c) the ability of the mapper to do a good area recovery.
+
+ 
+
+attach – Assumes that the current network was mapped but the information about gate assignment and pin-to-input binding is lost. This command attempts to attach the gates from the current library to the logic nodes in such a way that the functionality of the nodes is preserved. The result of this operation is not unique. The delay properties of the resulting network may be different from the original mapped network if the gates have different delay-parameters for the pins that correspond to symmetric variables of the gates. For example, if two pins of NAND2 have different delay-parameters, while the binding of pins to node inputs is selected arbitrarily, the delay properties will not be preserved.
+
+ 
+
+map – Performs standard cell mapping of the current network using the current library. If the current network is an AIG or an AIG with choices, it is used for mapping as it is. If the current network is a logic network, before mapping this command performs structural hashing of the factored forms of the nodes (resulting in an AIG) followed by balancing (resulting in an AIG that is well-balanced for delay). Both balancing and mapping take into account the arrival times of primary inputs which can be represented in BLIF. Switch –a disables area recovery and outputs the network as it is after delay optimal mapping. Another useful command, fraig_sweep, is applied after mapping by default (use switch –s to disable) to merge functionally equivalent nodes leading to additional savings in area.
+
+ 
+
+print_library – Prints the currently selected standard cell library.
+
+ 
+
+read_library – Reads a standard cell library from a file in GENLIB format.
+
+ 
+
+read_super – Reads a supergate library from a file using the supergate library format.
+
+ 
+
+super – Generates supergates for the given standard cell library.
+
+ 
+
+unmap – Erases the mapping of the current network by replacing each gate by a logic node with function equal to the function of the gate.
+
+ 
+
+Fraiging
+ 
+
+FRAIG is a package for constructing AIGs for Boolean functions while enforcing functional uniqueness of each AIG node. In the resulting graph, no two nodes have the same or complemented Boolean functions. Externally, FRAIG package exposes APIs that are similar to those of a BDD package but internally it uses simulation and SAT. Expression “fraiging a network” means “constructing the functionally reduced AIGs of the global functions of all the nodes in the network using the FRAIG package”. Another name for fraiging is “SAT sweeping”. The capability of FRAIG package to construct functionally-reduced AIGs by far exceeds the capability of the BDD package to construct BDDs. This makes functionally-reduced AIGs very useful in a variety of applications in synthesis and verification. The commands in this section provide access to the FRAIG package included in the current release.
+
+ 
+
+A useful alias choice is defined in the resource file. This alias combines structural choices derives from three different versions of the current network (the original network and two functionally equivalent network obtained by running two AIG rewriting scripts.) Invoking this alias on the current network immediately before technology mapping may improve both area and delay of the resulting network.
+
+ 
+
+fraig – Transforms the current network into a functionally-reduced AIG. A variety of command-line options coming with this command allow for selecting the number of simulation patterns, the number of SAT solver backtracks, etc. Command line switch ­–r disables functional reduction. Switch –s prevents applying functional reduction to the nodes with sparse functions (the functions, whose simulation information is composed of all 0’s or all 1’s.) Switch –c toggles recording alternative logic structures while performing functional reduction.
+
+ 
+
+fraig_trust – Assumes that the current network was derived by parsing a file, in which the choice nodes (the nodes representing structurally equivalent implementations of logic functions) were represented as (multi-input) OR-gates, while all other nodes are two-input AND-gated. Both ORs and ANDs can have complemented inputs. This command transforms the network satisfying the above restrictions into a functionally reduced AIG in the “trust mode” (syntactically), without invoking the FRAIG package.
+
+ 
+
+fraig_store – Stores the current network as one “synthesis snapshot” in the internal AIG database to be restored and used for technology mapping later.
+
+ 
+
+fraig_restore – Converts the currently stored AIG snapshots into a FRAIG and sets it to be the current network, to which technology mapping can now be applied. The AIG database is reset by calling this command.
+
+ 
+
+fraig_clean – Resets the AIG database without restoring it.
+
+ 
+
+fraig_sweep – Detects functionally equivalent nodes in a logic network. Unlike fraig, which transforms the network into a functionally reduced AIG, this command preserves the network structure and only merges the functionally equivalent nodes. This command can be applied to the mapped network. The resulting network is still mapped but reduced.
+
+ 
+
+dress – This command transfers the node names from an external network to the current network. For this purpose FRAIG package is used to detect functional equivalences between the nodes of the two networks. If a node in the current network has the same functionality as a node in the external network, the name is transferred. If the nodes are equivalent up to complementation, the name is transferred and suffix _inv is appended to it. This is useful because ABC (while preserving PI, PO, and latch output names) does not preserve the internal node names when processing logic networks and AIGs. Using this command, if the internal names are needed, they can be restored after the network processing is over, just before writing the resulting network into a file. Note that if, after calling command dress, the network is not immediately written into a file, the internal node names may be lost again.
+
+ 
+
+Verification commands
+ 
+
+Several equivalence checking options are currently implemented.
+
+ 
+
+cec – CEC engine that compares the PI/PO behaviors of two networks. If latches are present, the networks are cut at the latch boundary, latch inputs are added to primary outputs, latch outputs to primary inputs, and the behavior of the resulting POs is compared in terms of the resulting PIs. By default, a hybrid approach based on fraiging and SAT solving is used to solve the miter. Switch –s enables a SAT-only approach without fraiging.
+
+ 
+
+debug – This command is used to debug internal procedures.
+
+ 
+
+dprove – Unbounded SEC applied to the sequential miter (internally uses the same SEC engine as dsec)
+
+ 
+
+dsec – Unbounded SEC that checks equivalence of two network, before and after sequential synthesis (commands retime, scl, lcorr, ssw, etc)
+
+ 
+
+iprove – CEC engine applicable to a combinational miter (internally relies on the code as cec).
+
+ 
+
+prove – Implementation of an old CEC engine applicable to a combinational miter.
+
+ 
+
+sat – Assumes that the current network is a combination miter. Transforms the circuit into CNF and internally applies a recent version of MiniSat to solve this miter. Alternatively, the miter can be written out in CNF (command write_cnf) and solved by an external SAT solver.
+
+ 
+
+sec – Implements bounded sequential equivalence checking for two sequential networks. The product machine of these two networks is unrolled for the given number of timeframes specified on the command line using switch –F, resulting in a combinational miter. By default, a hybrid approach based on fraiging and SAT for solving the miter. Switch –s enables a SAT-only approach without fraiging.
+
+ 
+
+Unsorted
+ 
+
+aig – Converts local functions of the nodes to AIGs.
+
+ 
+
+append – Appends a new network on top of the current one. The primary inputs of the resulting network is a union of the primary inputs of the two networks.
+
+ 
+
+bdd – Converts local functions of the nodes to BDDs.
+
+ 
+
+cascade – An original implementation of the LUT-cascade decomposition.
+
+ 
+
+capo – Calls external placer CAPO, developed by the group of Igor Markov at University of Michigan.
+
+ 
+
+comb – If the current network is sequential, converts it into a combinational one by removing registers and adding new PIs and POs for each register output and register input.
+
+ 
+
+cone – Replaces the current network by one logic cone extracted from it.
+
+ 
+
+cut – Stand-alone implementation of k-feasible cut computation, used for technology mapping.
+
+ 
+
+demiter – Assumes that the network is a single output miter derived by XORing two logic cones. Decomposes the miter into two original cones, which are added to the current network as primary outputs.
+
+ 
+
+double – Duplicates the current network by creating two parallel copies. The numbers of PIs, POs, and registers double.
+
+ 
+
+espresso – Minimizes the current local functions of the nodes by applying SOP minimizer Espresso-MV.
+
+ 
+
+exdc_free – Removes the EXDC network of the current network.
+
+ 
+
+exdc_get – Makes the current network equal to the EXDC of the current network.
+
+ 
+
+exdc_set – Sets the given network (from file) to be the EXDC of the current network.
+
+ 
+
+ext_seq_dcs – Computes unreachable states for small sequential circuits and adds them to the current network as an EXDC. This command is useful as a source of don’t-cares for logic optimization.
+
+ 
+
+frames – Unrolls a sequential circuit for the given number of time-frames. Switch –i toggles initializing the timeframes using the reset values of the latches. If the initialized option is chosen, the resulting network is combinational. If the uninitialized option is chosen, the resulting network is a sequential circuit with the same latches and the combinational logic replaced by multiple copies of the original logic.
+
+ 
+
+gen – Generator of logic circuits.
+
+ 
+
+logic – Transforms the AIG into a logic network with the SOP representation of the two-input AND-gates.
+
+ 
+
+miter – Computes the miter of the two networks specified on the command line. If only one file name is specified, the miter of this network with the current network is computed. If no network is specified on the command line, creates the miter of the current network and its spec (the network, which was used as the starting point for synthesis). If the current network is sequential, computes the sequential miter (the product machine). The miter has only one primary outputs, which is equal to 1 if and only if the behaviors of the networks differ. The networks, for which the miter computation is called, should have the same number and ordering of PIs, POs, and latches. When sequential miter is computed, there is no restriction on the number and ordering of latches in the networks.
+
+ 
+
+muxes – This command is applicable to logic networks with nodes presented by BDDs (such networks are produced by running renode or collapse on a multi-level network, or by applying disjoint-support decomposition using command dsd). It replaces each node by a set of multiplexers in one-to-one correspondence with the local BDD of the node.
+
+ 
+
+mvsis – Invokes an external binary of MVSIS to execute a command or a script for the current ABC network.
+
+ 
+
+node – Creates a network by extracting one node from the current network.
+
+ 
+
+order – Computes a good static variable order for the BDD construction.
+
+ 
+
+orpos – Replaces the POs of the current network by one PO whose logic function is equal to the Boolean OR of the original POs.
+
+ 
+
+reorder – Reorders the local BDD of all nodes in the current network using variable sifting. Works only if the current network is a BDD logic network.
+
+ 
+
+short_names – Replaces the PI/PO/latch names by short alpha-numeric strings.
+
+ 
+
+sis – Invokes an external binary of SIS to execute a command or a script for the current ABC network.
+
+ 
+
+sop – Converts local functions of the nodes to SOPs.
+
+ 
+
+test – A place-holder command for testing experimental code.
+
+ 
+
+Programming notes
+ 
+
+This presentation introduces basics of programming in ABC:
+
+“Going Places with ABC” (250K)
+
+ 
+
+This paper gives an overview of the ABC programming environment:
+
+“Quick Look under the Hood of ABC: A Programmer’s Manual” (200K)
+
+ 
+
+This write-up shows how to programmably construct AIG in the user’s application:
+
+“Constructing AIGs in ABC: A Tutorial” (140K)
+
+ 
+
+Acknowledgements
+ 
+
+The current version of ABC includes the following software.
+
+·         BDD package CUDD (by Fabio Somenzi)
+
+·         C-language version of MiniSAT (by Niklas Een and Niklas Sörensson)
+
+·         Data compression library zlib (by Jean-loup Gailly and Mark Adler)
+
+·         Data compression library bzip2 (by Julian Seward)
+
+ 
+
+Several persons and research groups contributed source code.
+
+·         Commands print_symm and print_unate were developed in collaboration with Jin Zhang and Malgorzata Chrzanowska-Jeske (Portland State University, Portland OR).
+
+·         Command bm for Boolean matching was developed by Hadi Katebi and Igor L. Markov (University of Michigan, Ann Arbor).
+
+·         SMV generator in file ioWriteSmv.c was contributed by Satrajit Chatterjee.
+
+ 
+
+Glossary
+ 
+
+ABC – The name of a new logic synthesis system
+
+AIG – And-Inverter Graph, a Boolean network composed of two-input ANDs and inverters
+
+BLIF – Berkeley Logic Interchange Format, a format traditionally used by SIS, VIS, and MVSIS to represent logic networks
+
+BDD – Binary Decision Diagram, a canonical graph-based representation of Boolean functions
+
+CEC – Combinational equivalence checking
+
+CI – Primary input and latch outputs
+
+CO – Primary output and latch inputs
+
+FPGA – Field-Programmable Gate Array
+
+FRAIG – (a) Functionally Reduced AIG and (b) AIG package with on-the-fly detection of functionally equivalent AIG nodes
+
+FRAIGing – Transforming an AIG into a Functionally Reduced AIG (using the FRAIG package)
+
+IWLS – International Workshop on Logic and Synthesis, and annual research-oriented workshop
+
+LI – Latch input
+
+LO – Latch output
+
+LUT – Look-up table, a programmable logic component that can implement an arbitrary Boolean function up to a fixed number of inputs
+
+PI – Primary input
+
+PO – Primary output
+
+SAT – Boolean satisfiability
+
+SEC – Sequential equivalence checking
+
+SOP – Sum-Of-Products, a non-canonical representation of Boolean functions
+
+TFI – Transitive fanin
+
+TFO – Transitive fanout
+
+ 
+
+Webpage started on July 29, 2005, and last updated on September 20, 2012.
+
+Please email questions and comments to Alan Mishchenko (alanmi at EECS dot Berkeley dot edu).
+
+ 
+
+ 

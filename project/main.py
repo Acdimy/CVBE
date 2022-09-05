@@ -74,9 +74,9 @@ def gen_cvbe(circ):
     curr_output = 0
     circ_cvbe = None
     for ii,layer in enumerate(gates_layer_list[1:]):
-        # print(ii, 'layer')
+        print(ii, 'layer')
         if ii != 0:
-            # print(len(circ_cvbe.term_list))
+            print(len(circ_cvbe.term_list))
 #             circ_cvbe.toCNF()
             circ_cvbe.regularize()
             circ_cvbe.toCNF()
@@ -94,25 +94,25 @@ def gen_cvbe(circ):
 
 if __name__ == '__main__':
     path = '../benchmark/'
-    name1 = 'RandomClifford_q5_0_0.qasm'
-    name2 = 'RandomClifford_q5_0_1.qasm'
+    name1 = 'qft_10.qasm'
+    # name2 = 'RandomClifford_q10_0_1.qasm'
     circ0 = QuantumCircuit().from_qasm_file(path+name1)
-    circ1 = QuantumCircuit().from_qasm_file(path+name2)
+    # circ1 = QuantumCircuit().from_qasm_file(path+name2)
     cvbe0_time_1 = time.time()
     cvbe0 = gen_cvbe(circ0)
     cvbe0.regularize()
     cvbe0.toCNF()
     cvbe0_time_2 = time.time()
     cvbe1_time_1 = time.time()
-    cvbe1 = gen_cvbe(circ1)
-    cvbe1.regularize()
-    cvbe1.toCNF()
-    cvbe1_time_2 = time.time()
+    # cvbe1 = gen_cvbe(circ1)
+    # cvbe1.regularize()
+    # cvbe1.toCNF()
+    # cvbe1_time_2 = time.time()
 
-    equal_time1 = time.time()
-    res = cvbe0.equals(cvbe1)
-    equal_time2 = time.time()
-    print(res)
-    print("C1 construction: %.6f"%(cvbe0_time_2-cvbe0_time_1))
-    print("C2 construction: %.6f"%(cvbe1_time_2-cvbe1_time_1))
-    print("Equivalence checking time: %.6f"%(equal_time2-equal_time1))
+    # equal_time1 = time.time()
+    # res = cvbe0.equals(cvbe1)
+    # equal_time2 = time.time()
+    # print(res)
+    # print("C1 construction: %.6f"%(cvbe0_time_2-cvbe0_time_1))
+    # print("C2 construction: %.6f"%(cvbe1_time_2-cvbe1_time_1))
+    # print("Equivalence checking time: %.6f"%(equal_time2-equal_time1))

@@ -1,0 +1,7 @@
+aig 7 2 0 1 5
+15
+o0 miter
+c
+aigmiter
+and.aig
+or.aig
